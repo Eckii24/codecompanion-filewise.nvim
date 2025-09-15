@@ -7,14 +7,25 @@ local M = {}
 local Path = require('plenary.path')
 local scan = require('plenary.scandir')
 
+local frontmatter = require('codecompanion.filewise.frontmatter')
+local utils = require('codecompanion.filewise.utils')
 local cc_slash_file = require('codecompanion.strategies.chat.slash_commands.file')
+
 
 local uv = vim.loop
 
---- @class CustomInstructionsConfig
---- @field enabled boolean Whether the extension is enabled
---- @field simple string[] List of simple instruction file/globs
---- @field conditional string[] List of conditional instruction file/globs
+---@class CustomInstructionsTriggers
+---@field user_events string[] List of user event names
+---@field variable_buffer boolean Enable variable buffer trigger
+---@field slash_file boolean Enable /file slash command trigger
+---@field slash_buffer boolean Enable /buffer slash command trigger
+
+---@class CustomInstructionsConfig
+---@field enabled boolean Whether the extension is enabled
+---@field simple string[] List of simple instruction file/globs
+---@field conditional string[] List of conditional instruction file/globs
+---@field triggers CustomInstructionsTriggers Trigger configuration
+---@field root_markers string[] List of project root marker files or directories
 
 --- @type CustomInstructionsConfig
 M.config = {
@@ -48,33 +59,13 @@ M.config = {
 --- @type table<string, string[]>
 local apply_map = {}
 
---- Find project root directory given a file path
---- @param path? string Path to a file or directory (cwd by default)
---- @return string? Project root directory (absolute path) or nil if not found
-local function find_project_root(path)
-  local cwd = vim.fn.getcwd()
-  local dir = Path:new(path or cwd)
-  if dir:is_file() then dir = dir:parent() end
-  local markers = M.config.root_markers or { '.git' }
-  while dir and dir:absolute() ~= '/' do
-    for _, marker in ipairs(markers) do
-      if (dir / marker):exists() then
-        return dir:absolute()
-      end
-    end
-    dir = dir:parent()
-    if not dir then break end
-  end
-  return nil
-end
-
 --- Expand globs to files from project root.
---- @param globs string[] List of glob patterns
---- @param base_path string|nil Optional base path to determine project root
---- @return string[] List of resolved file paths
+---@param globs string[] List of glob patterns
+---@param base_path string|nil Optional base path to determine project root
+---@return string[] List of resolved file paths
 local function expand_globs(globs, base_path)
   local results = {}
-  local project_root = find_project_root(base_path)
+  local project_root = utils.find_project_root(M.config.root_markers, base_path)
   for _, g in ipairs(globs) do
     local matches = vim.fn.glob(project_root .. '/' .. g, false, true)
     for _, m in ipairs(matches) do
@@ -84,39 +75,9 @@ local function expand_globs(globs, base_path)
   return results
 end
 
---- Parse YAML frontmatter from a markdown file.
---- @param path string Path to the markdown file
---- @return table|nil Parsed YAML frontmatter as a table.
-local function parse_frontmatter(path)
-  local lines = {}
-  local in_frontmatter = false
-  for l in io.lines(path) do
-    if l:match('^%-%-%-') then
-      if not in_frontmatter then
-        in_frontmatter = true
-      else
-        break
-      end
-    elseif in_frontmatter then
-      table.insert(lines, l)
-    end
-  end
-  if #lines == 0 then return nil end
-  local ok, lyaml = pcall(require, 'lyaml')
-  if not ok then
-    vim.notify('[CustomInstructions] \'lyaml\' module not found', vim.log.levels.WARN)
-    return nil
-  end
-  local ok2, res = pcall(lyaml.load, table.concat(lines, '\n'))
-  if ok2 and type(res) == 'table' then
-    return res
-  end
-  return nil
-end
-
 --- Split comma-separated globs into a list.
---- @param str string Comma-separated globs
---- @return string[] List of trimmed glob patterns
+---@param str string Comma-separated globs
+---@return string[] List of trimmed glob patterns
 local function split_globs(str)
   local out = {}
   for g in str:gmatch('[^,]+') do
@@ -125,8 +86,17 @@ local function split_globs(str)
   return out
 end
 
+--- Match file path against a Unix-style glob pattern.
+---@param path string File path
+---@param glob string Glob pattern
+---@return boolean True if path matches glob
+local function matches_glob(path, glob)
+  if vim.regex(vim.fn.glob2regpat(glob)):match_str(path) then
+    return true
+  end
+end
+
 --- Build mapping of instruction files from config.
---- Populates apply_map and instruction_files.
 local function build_mapping()
   if not M.config.enabled then return end
   -- Reset always included files
@@ -136,7 +106,7 @@ local function build_mapping()
     end
     -- Add conditional files to their respective globs
     for _, path in ipairs(expand_globs(M.config.conditional)) do
-      local fm = parse_frontmatter(path)
+      local fm = frontmatter.parse_frontmatter(path)
       if fm and fm.applyTo then
         for _, g in ipairs(split_globs(fm.applyTo)) do
           apply_map[g] = apply_map[g] or {}
@@ -146,23 +116,10 @@ local function build_mapping()
     end
 end
 
---- Match file path against a Unix-style glob pattern.
---- @param path string File path
---- @param glob string Glob pattern
---- @return boolean True if path matches glob
-local function matches_glob(path, glob)
-  if vim.regex(vim.fn.glob2regpat(glob)):match_str(path) then
-    return true
-  end
-end
-
----
--- Add a file to the chat context using the /file slash command.
--- Calls the CodeCompanion file slash command to add the given file to the specified chat context.
--- @param chat table The chat object to add the file to
--- @param file string The file path to add to the context
-local function slash_file(chat, file)
-  --cc_slash_file.new({ Chat = chat }):output({ path = file })
+--- Add a file to the chat context using the /file slash command.
+---@param chat table The chat object to add the file to
+---@param file string The file path to add to the context
+local function add_instructions(chat, file)
   chat.context:add({
     id = '<file>' .. file .. '</file>',
     path = file,
@@ -170,16 +127,15 @@ local function slash_file(chat, file)
   })
 end
 
----
--- Add relevant instruction files to the context for a given buffer.
--- @param bufnr integer Buffer number
+--- Add relevant instruction files to the context for a given buffer.
+---@param bufnr integer Buffer number
 function M.sync_context(bufnr)
   if not M.config.enabled then return end
   -- Get current chat
   local chat = require('codecompanion.strategies.chat').buf_get_chat(bufnr)
   if not chat then return end
   -- Get project root
-  local project_root = find_project_root()
+  local project_root = utils.find_project_root(M.config.root_markers)
   if not project_root then
     vim.notify('[CustomInstructions] Are you inside a project workspace?', vim.log.levels.WARN)
     return
@@ -212,13 +168,12 @@ function M.sync_context(bufnr)
   end
   -- Finally add files
   for file, add in pairs(to_add) do
-    if add then slash_file(chat, file) end
+    if add then add_instructions(chat, file) end
   end
 end
 
 --- Setup the CustomInstructions extension.
---- Initializes config, builds mapping, and sets up user commands and hooks.
---- @param opts table|nil Optional configuration overrides
+---@param opts table|nil Optional configuration overrides
 function M.setup(opts)
   if opts then M.config = vim.tbl_deep_extend('force', M.config, opts) end
 
@@ -291,7 +246,6 @@ function M.setup(opts)
       vim.notify('[CustomInstructions] Patched /buffer slash command')
     end
   end
-
 end
 
 return M
