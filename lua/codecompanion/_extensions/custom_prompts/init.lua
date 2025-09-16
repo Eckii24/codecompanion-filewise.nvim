@@ -7,7 +7,6 @@ local frontmatter = require("codecompanion.filewise.frontmatter")
 local utils = require("codecompanion.filewise.utils")
 
 ---@class CustomPromptsConfig
----@field enabled boolean Whether the extension is enabled
 ---@field prompt_dirs string[] List of directories to scan for prompt files (paths are absolute or relative to workspace)
 ---@field prompt_role string Role of the CodeCompanion prompt entry
 ---@field model_map table<string, string> Mapping from Copilot model names to CodeCompanion model names
@@ -15,7 +14,6 @@ local utils = require("codecompanion.filewise.utils")
 ---@field format_content fun(line:string): string Function to format the prompt content (line-wise)
 ---@field root_markers string[] List of root marker filenames to identify project root
 M.config = {
-  enabled = true,
   prompt_dirs = {
     ".github/prompts",
     (vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')) .. '/codecompanion/filewise/prompts',
@@ -166,7 +164,6 @@ end
 ---@param opts table|nil Optional configuration overrides
 function M.setup(opts)
   M.config = vim.tbl_deep_extend("force", M.config, opts or {})
-  if not M.config.enabled then return end
   local prompt_library = require("codecompanion.config").config.prompt_library
   local files = scan.scan_dir(gather_prompt_dirs(), { search_pattern = "%.prompt%.md$" })
   for _, file in ipairs(files) do

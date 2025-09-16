@@ -8,7 +8,6 @@ local frontmatter = require('codecompanion.filewise.frontmatter')
 local utils = require('codecompanion.filewise.utils')
 local cc_slash_file = require('codecompanion.strategies.chat.slash_commands.file')
 
-
 local uv = vim.loop
 
 ---@class CustomInstructionsTriggers
@@ -21,7 +20,6 @@ local uv = vim.loop
 ---@field sync_context string Normal-mode mapping to trigger context synchronization
 
 ---@class CustomInstructionsConfig
----@field enabled boolean Whether the extension is enabled
 ---@field simple string[] List of simple instruction file/globs
 ---@field conditional string[] List of conditional instruction file/globs
 ---@field triggers CustomInstructionsTriggers Trigger configuration
@@ -30,7 +28,6 @@ local uv = vim.loop
 
 --- @type CustomInstructionsConfig
 M.config = {
-  enabled = true,
   simple = {
     '.ai/rules.md', '.ai/*.rules.md',
     '.rules',
@@ -102,7 +99,6 @@ end
 
 ---Build mapping of instruction files from config.
 local function build_mapping()
-  if not M.config.enabled then return end
   -- Reset always included files
   apply_map = { ['**'] = {} }
     for _, path in ipairs(expand_globs(M.config.simple)) do
@@ -134,7 +130,6 @@ end
 ---Add relevant instruction files to the context for a given buffer.
 ---@param bufnr integer Buffer number
 function M.sync_context(bufnr)
-  if not M.config.enabled then return end
   -- Get current chat
   local chat = require('codecompanion.strategies.chat').buf_get_chat(bufnr)
   if not chat then return end

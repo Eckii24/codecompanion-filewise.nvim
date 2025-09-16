@@ -7,14 +7,12 @@ local frontmatter = require("codecompanion.filewise.frontmatter")
 local utils = require("codecompanion.filewise.utils")
 
 ---@class CustomModesConfig
----@field enabled boolean Whether the extension is enabled
 ---@field mode_dirs string[] List of directories to scan for mode files (paths are absolute or relative to workspace)
 ---@field model_map table<string, string> Mapping from Copilot model names to CodeCompanion model names
 ---@field tool_map table<string, string> Mapping from Copilot tool names to CodeCompanion tool names
 ---@field format_content fun(line:string): string Function to format the prompt content (line-wise)
 ---@field root_markers string[] List of root marker filenames to identify project root
 M.config = {
-  enabled = true,
   mode_dirs = {
     ".github/chatmodes",
     (vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')) .. '/codecompanion/filewise/chatmodes',
@@ -165,7 +163,6 @@ end
 ---@param opts table|nil Optional configuration overrides
 function M.setup(opts)
   M.config = vim.tbl_deep_extend("force", M.config, opts or {})
-  if not M.config.enabled then return end
   local prompt_library = require("codecompanion.config").config.prompt_library
   local files = scan.scan_dir(gather_mode_dirs(), { search_pattern = "%.chatmode%.md$" })
   for _, file in ipairs(files) do
