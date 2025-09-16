@@ -110,7 +110,7 @@ local function build_mapping()
     end
     -- Add conditional files to their respective globs
     for _, path in ipairs(expand_globs(M.config.conditional)) do
-      local fm = frontmatter.parse_frontmatter(path)
+      local fm = frontmatter.parse(path)
       if fm and fm.applyTo then
         for _, g in ipairs(split_globs(fm.applyTo)) do
           apply_map[g] = apply_map[g] or {}
