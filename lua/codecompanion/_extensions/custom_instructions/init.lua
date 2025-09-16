@@ -69,7 +69,7 @@ local apply_map = {}
 ---@return string[] List of resolved file paths
 local function expand_globs(globs, base_path)
   local results = {}
-  local project_root = utils.find_project_root(M.config.root_markers, base_path)
+  local project_root = utils.find_project_root(M.config.root_markers, base_path) or vim.fn.getcwd()
   for _, g in ipairs(globs) do
     local matches = vim.fn.glob(project_root .. '/' .. g, false, true)
     for _, m in ipairs(matches) do
