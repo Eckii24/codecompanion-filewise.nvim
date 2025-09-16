@@ -8,25 +8,32 @@ local M = {}
 
 --- Parses YAML frontmatter from a markdown file and returns it as a Lua table.
 ---@param path string Path to the markdown file
+---@param rest boolean Whether to return the rest of the file as well.
 ---@return table|nil Parsed YAML frontmatter as a table, or nil if not found or invalid
-function M.parse_frontmatter(path)
-  local lines = {}
+---@return table The content lines of the file, except for the frontmatter.
+function M.parse(path, rest)
   local in_frontmatter = false
+  local after_frontmatter = false
+  local frontmatter = {}
+  local body = {}
   for l in io.lines(path) do
     if l:match('^%-%-%-') then
       if not in_frontmatter then
         in_frontmatter = true
+      elseif not after_frontmatter then
+        after_frontmatter = true
       else
-        break
+        if rest then table.insert(body, l) else break end
       end
-    elseif in_frontmatter then
-      table.insert(lines, l)
+    elseif in_frontmatter and not after_frontmatter then
+      table.insert(frontmatter, l)
+    elseif after_frontmatter then
+      if rest then table.insert(body, l) else break end
     end
   end
-  if #lines == 0 then return nil end
-  local ok2, res = pcall(lyaml.load, table.concat(lines, '\n'))
-  if ok2 and type(res) == 'table' then
-    return res
+  local ok, fm = pcall(lyaml.load, table.concat(frontmatter, '\n'))
+  if ok and type(fm) == 'table' then
+    return fm, body
   end
   return nil
 end
