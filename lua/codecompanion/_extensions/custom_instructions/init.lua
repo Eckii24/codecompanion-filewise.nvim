@@ -1,6 +1,3 @@
---=============================================================================
--- custom_instructions – CodeCompanion extension for custom instruction files
---=============================================================================
 
 local M = {}
 
@@ -62,11 +59,11 @@ M.config = {
   root_markers = { '.git', '.github' },
 }
 
---- Mapping from glob pattern to list of instruction file paths (simple and conditional)
---- @type table<string, string[]>
+---Mapping from glob pattern to list of instruction file paths (simple and conditional)
+---@type table<string, string[]>
 local apply_map = {}
 
---- Expand globs to files from project root.
+---Expand globs to files from project root.
 ---@param globs string[] List of glob patterns
 ---@param base_path string|nil Optional base path to determine project root
 ---@return string[] List of resolved file paths
@@ -82,7 +79,7 @@ local function expand_globs(globs, base_path)
   return results
 end
 
---- Split comma-separated globs into a list.
+---Split comma-separated globs into a list.
 ---@param str string Comma-separated globs
 ---@return string[] List of trimmed glob patterns
 local function split_globs(str)
@@ -93,7 +90,7 @@ local function split_globs(str)
   return out
 end
 
---- Match file path against a Unix-style glob pattern.
+---Match file path against a Unix-style glob pattern.
 ---@param path string File path
 ---@param glob string Glob pattern
 ---@return boolean True if path matches glob
@@ -103,7 +100,7 @@ local function matches_glob(path, glob)
   end
 end
 
---- Build mapping of instruction files from config.
+---Build mapping of instruction files from config.
 local function build_mapping()
   if not M.config.enabled then return end
   -- Reset always included files
@@ -123,7 +120,7 @@ local function build_mapping()
     end
 end
 
---- Add a file to the chat context using the /file slash command.
+---Add a file to the chat context using the /file slash command.
 ---@param chat table The chat object to add the file to
 ---@param file string The file path to add to the context
 local function add_instructions(chat, file)
@@ -134,7 +131,7 @@ local function add_instructions(chat, file)
   })
 end
 
---- Add relevant instruction files to the context for a given buffer.
+---Add relevant instruction files to the context for a given buffer.
 ---@param bufnr integer Buffer number
 function M.sync_context(bufnr)
   if not M.config.enabled then return end
@@ -179,7 +176,7 @@ function M.sync_context(bufnr)
   end
 end
 
---- Setup the CustomInstructions extension.
+---Setup the CustomInstructions extension.
 ---@param opts table|nil Optional configuration overrides
 function M.setup(opts)
   if opts then M.config = vim.tbl_deep_extend('force', M.config, opts) end
