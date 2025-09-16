@@ -29,9 +29,20 @@ M.config = {
 ---@param tools string[]|nil List of tools
 ---@return string Formatted string of tools
 local function format_tools(tools)
-  local tools = vim.tbl_map(function(t) return M.config.tool_map[t] or ('@{' .. t .. '}') end, tools or {})
-  if #tools > 0 then
-    return '\n\n**Available tools:** ' .. table.concat(tools, ", ") .. '\n\n'
+  local res = {}
+  for _, t in ipairs(tools or {}) do
+    vim.notify('Checking `' .. t .. '`')
+    local mapped = M.config.tool_map[t]
+    if not mapped then
+      table.insert(res, '@{' .. t .. '}')
+    elseif type(mapped) == "string" then
+      table.insert(res, mapped)
+    elseif type(mapped) == "table" then
+      vim.list_extend(res, mapped)
+    end
+  end
+  if #res > 0 then
+    return '\n\n**Available tools:** ' .. table.concat(res, ", ") .. '\n\n'
   else
     return ''
   end
