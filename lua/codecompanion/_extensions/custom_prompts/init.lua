@@ -1,4 +1,3 @@
--- TODO move available tools to a second user prompt
 local M = {}
 
 local Path = require("plenary.path")
