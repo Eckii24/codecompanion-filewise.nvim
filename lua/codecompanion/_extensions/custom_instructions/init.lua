@@ -20,11 +20,15 @@ local uv = vim.loop
 ---@field slash_file boolean Enable /file slash command trigger
 ---@field slash_buffer boolean Enable /buffer slash command trigger
 
+---@class CustomInstructionsKeymaps
+---@field sync_context string Normal-mode mapping to trigger context synchronization
+
 ---@class CustomInstructionsConfig
 ---@field enabled boolean Whether the extension is enabled
 ---@field simple string[] List of simple instruction file/globs
 ---@field conditional string[] List of conditional instruction file/globs
 ---@field triggers CustomInstructionsTriggers Trigger configuration
+---@field keymaps CustomInstructionsKeymaps Keymaps configuration
 ---@field root_markers string[] List of project root marker files or directories
 
 --- @type CustomInstructionsConfig
@@ -51,6 +55,9 @@ M.config = {
     variable_buffer = false,
     slash_file = true,
     slash_buffer = true,
+  },
+  keymaps = {
+    sync_context = 'gi',
   },
   root_markers = { '.git', '.github' },
 }
@@ -185,6 +192,16 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('CustomInstructionsContextSync', function(opts)
     M.sync_context(opts.args ~= '' and tonumber(opts.args) or vim.api.nvim_get_current_buf())
   end, {desc='Sync custom instructions to context', nargs='?'})
+
+  -- Keymaps
+  local keymaps = require("codecompanion.config").strategies.chat.keymaps
+  keymaps.sync_context = {
+    modes = {
+      n = M.config.keymaps.sync_context,
+    },
+    description = "Add relevant instruction files to the context.",
+    callback = function() M.sync_context(vim.api.nvim_get_current_buf()) end,
+  }
 
   -- Context sync on events
   local grp = vim.api.nvim_create_augroup("CodeCompanionCustomInstructions", { clear = true })
