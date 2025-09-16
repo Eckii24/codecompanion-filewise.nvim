@@ -1,4 +1,3 @@
-
 local M = {}
 
 local Path = require('plenary.path')
@@ -36,6 +35,7 @@ M.config = {
     '.windsurfrules',
     '.clinerules',
     '.github/copilot-instructions.md',
+    (vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')) .. '/codecompanion/filewise/instructions/copilot-instructions.md',
     'AGENT.md',
     'AGENTS.md',
     'CLAUDE.md',
@@ -43,6 +43,7 @@ M.config = {
   },
   conditional = {
     '.github/instructions/*.instructions.md',
+    (vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')) .. '/codecompanion/filewise/instructions/*.instructions.md',
   },
   triggers = {
     user_events = { "CodeCompanionChatCreated", "CodeCompanionChatSubmitted" },
@@ -66,12 +67,13 @@ local apply_map = {}
 ---@return string[] List of resolved file paths
 local function expand_globs(globs, base_path)
   local results = {}
-  local project_root = utils.find_project_root(M.config.root_markers, base_path) or vim.fn.getcwd()
+  local project_root = Path:new(utils.find_project_root(M.config.root_markers, base_path) or vim.fn.getcwd())
   for _, g in ipairs(globs) do
-    local matches = vim.fn.glob(project_root .. '/' .. g, false, true)
-    for _, m in ipairs(matches) do
-      table.insert(results, vim.fn.fnamemodify(m, ':p'))
+    local path = Path:new(g)
+    if not path:is_absolute() then
+      path = project_root / path
     end
+    vim.list_extend(results, vim.fn.glob(path:absolute(), false, true))
   end
   return results
 end

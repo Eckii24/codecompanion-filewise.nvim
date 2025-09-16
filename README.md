@@ -60,6 +60,7 @@ require'codecompanion'.setup {
       opts = {
         simple = {
           '.github/copilot-instructions.md',
+          (vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')) .. '/codecompanion/filewise/instructions/copilot-instructions.md',
           '.ai/rules.md', '.ai/*.rules.md',
           '.rules',
           '.goosehints',
@@ -71,6 +72,7 @@ require'codecompanion'.setup {
         },
         conditional = {
           '.github/instructions/*.instructions.md',
+          (vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')) .. '/codecompanion/filewise/instructions/*.instructions.md',
         },
         triggers = {
           user_events = { "CodeCompanionChatCreated", "CodeCompanionChatSubmitted" },
