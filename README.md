@@ -1,6 +1,24 @@
-# CodeCompanion Filewise
+<div align="center">
+  <h1 align="center">· CodeCompanion Filewise ·</h1>
 
-> File-aware AI assistance for Neovim via modular extensions
+  <p align="center">
+    File-aware AI assistance for Neovim via modular CodeCompanion extensions
+    <br/>
+    <br/>
+    <a href="https://github.com/olimorris/codecompanion.nvim/releases/tag/v17.18.0">
+        <img src="https://img.shields.io/badge/CodeCompanion-v17.18.0-C678DD?style=for-the-badge">
+    </a>
+    <a href="https://neovim.io">
+        <img src="https://img.shields.io/badge/Neovim-57A143?style=for-the-badge&logo=neovim&logoColor=white">
+    </a>
+    <a href="https://www.lua.org">
+        <img src="https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white">
+    </a>
+    <a href="https://opensource.org/licenses/MIT">
+        <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge">
+    </a>
+  </p>
+</div>
 
 ## Overview
 
