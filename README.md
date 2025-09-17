@@ -61,8 +61,12 @@ Install as a dependency of `olimorris/codecompanion.nvim`.
 
 ### Basic Usage
 
-Custom instruction files, prompts and chat modes are provided as three separate extensions for CodeCompanion;
-as such you will need to enable them separately.
+Custom instructions are added to the context either manually by the user (using the provided commands) or automatically on a configurable set of triggers.
+Custom prompts and chat modes are turned into custom prompts in your prompt library:
+- modes are turned into prompts that will replace the default system prompt and are available in the prompt library using the `:CodeCompanionActions` command.
+- prompts are turned into prompts appearing both in the prompt library and as slash commands in chat.
+
+All features are provided as three separate extensions for CodeCompanion; as such you will need to enable them separately.
 
 ## Configuration
 
@@ -145,7 +149,9 @@ require'codecompanion'.setup {
         },
         model_map = {},
         tool_map = {},
-        format_content = nil,
+        format_content = function(body)
+          return body:gsub('%f[#]#','###')
+        end,
         root_markers = { '.git', '.github' },
       }
     }
@@ -172,6 +178,8 @@ end
 
 This allows you to dynamically inject values or perform custom formatting on your prompts.
 
+The default function changes all Markdown headings to be two levels deeper to avoid problems with the way CodeCompanion handles the chat buffer.
+
 > [!NOTE]
 > The extension handles most [VS Code variables](https://code.visualstudio.com/docs/copilot/customization/prompt-files#_prompt-file-format) already, even input variables.
 
@@ -185,7 +193,7 @@ Use these maps to optionally translate these keywords.
 {
   model_map = {
     ['GPT 4.1'] = 'gpt-4.1',
-    ['Clause Sonnet 3.7'] = 'claude-3.7-sonnet',
+    ['Claude Sonnet 3.7'] = 'claude-3.7-sonnet',
   },
   tool_map = {
     fetch = '@{fetch_webpage}',
@@ -211,7 +219,9 @@ require'codecompanion'.setup {
         prompt_role = "user",
         model_map = {},
         tool_map = {},
-        format_content = function(body) return body:gsub('^#','###') end,
+        format_content = function(body)
+          return body:gsub('%f[#]#','###')
+        end,
         root_markers = { '.git', '.github' },
       }
     }
