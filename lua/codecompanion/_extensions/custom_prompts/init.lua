@@ -10,7 +10,7 @@ local utils = require("codecompanion.filewise.utils")
 ---@field prompt_role string Role of the CodeCompanion prompt entry
 ---@field model_map table<string, string> Mapping from Copilot model names to CodeCompanion model names
 ---@field tool_map table<string, string> Mapping from Copilot tool names to CodeCompanion tool names
----@field format_content fun(line:string): string Function to format the prompt content (line-wise)
+---@field format_content fun(body:string): string Function to format the prompt content
 ---@field root_markers string[] List of root marker filenames to identify project root
 M.config = {
   prompt_dirs = {
@@ -20,7 +20,9 @@ M.config = {
   prompt_role = "user",
   model_map = {},
   tool_map = {},
-  format_content = function(l) return l:gsub('^#','###') end,
+  format_content = function(body)
+    return body:gsub('%f[#]#','###')
+  end,
   root_markers = { '.git', '.github' },
 }
 
@@ -52,29 +54,28 @@ end
 ---@param body string[] List of lines from mode body
 ---@return string Fromatted prompt body
 local function format_body(ctx, file, body)
+  local body = table.concat(body, '\n')
+  -- User format function
+  body = M.config.format_content(body)
   -- Workspace variables: ${workspaceFolder}, ${workspaceFolderBasename}
   local workspace_folder = utils.find_project_root(M.config.root_markers) or vim.fn.getcwd()
   local workspace_folder_basename = workspace_folder:gsub('^.+/',''):gsub('/+$','')
+  body = body:gsub('%${workspaceFolder}', workspace_folder)
+             :gsub('%${workspaceFolderBasename}', workspace_folder_basename)
   -- File context variables: ${file}, ${fileBasename}, ${fileDirname}, ${fileBasenameNoExtension}
   -- TODO This might not be the name of the prompt file but the name of the file in the active buffer.
   local file_basename = file:gsub('^.+/','')
   local file_basename_noext = file_basename:gsub('%..-$','')
   local file_dirname = Path:new(file):parent():absolute():gsub('^.+/','')
+  body = body:gsub('%${file}', file)
+             :gsub('%${fileBasename}', file_basename)
+             :gsub('%${fileBasenameNoExtension}', file_basename_noext)
+             :gsub('%${fileDirname}', file_dirname)
   -- Input variables: ${input:variableName}, ${input:variableName:placeholder} (pass values to the prompt from the chat input field)
-  local body = vim.tbl_map(function(l)
-    return l:gsub('%${workspaceFolder}', workspace_folder)
-            :gsub('%${workspaceFolderBasename}', workspace_folder_basename)
-            :gsub('%${file}', file)
-            :gsub('%${fileBasename}', file_basename)
-            :gsub('%${fileBasenameNoExtension}', file_basename_noext)
-            :gsub('%${fileDirname}', file_dirname)
-            :gsub('%${input:([%w-_]+):?([^}]*)}', function(var, default)
-              -- TODO: use vim.ui.input when it becomes synchronous
-              return vim.fn.input('Value for ' .. var .. ': ', default)
-            end)
-  end, body)
-  -- User format function
-  body = vim.tbl_map(M.config.format_content, body)
+  body = body:gsub('%${input:([%w-_]+):?([^}]*)}', function(var, default)
+    -- TODO: use vim.ui.input when it becomes synchronous
+    return vim.fn.input('Value for ' .. var .. ': ', default)
+  end)
   -- Selection variables: ${selection}, ${selectedText}
   local selection = {}
   if ctx and ctx.is_visual and #ctx.lines > 0 then
@@ -88,9 +89,7 @@ local function format_body(ctx, file, body)
     selection = vim.fn.getreg('*', 1, true)
   end
   selection = table.concat(selection, '\n')
-  body = table.concat(body, '\n')
-    :gsub('%${selection}', selection)
-    :gsub('%${selectedText}', selection)
+  body = body:gsub('%${(selection|selectedText)}', selection)
   return body
 end
 
