@@ -4,14 +4,27 @@
 
 local M = {}
 
+--- Trim leading and trailing whitespace from a string.
+---@param s string|nil
+---@return string|nil
 local function trim(s)
   if not s then return s end
   return s:match('^%s*(.-)%s*$')
 end
 
+--- Remove a single layer of surrounding quotes from a string if present.
+---@param s string|nil
+---@return string|nil
 local function unquote(s)
   if not s then return s end
   return s:match('^"(.-)"$') or s:match("^'(.-)'$") or s
+end
+
+--- Strip only the leading indentation from a string (keep trailing spaces intact).
+---@param s string
+---@return string
+local function ltrim(s)
+  return (s:gsub('^%s+', ''))
 end
 
 --- Simple YAML parser for basic key-value frontmatter
@@ -23,8 +36,12 @@ end
 ---        - a
 ---        - b
 ---  - block scalars using | or >
---- @param yaml_text string The YAML content to parse
---- @return table|nil Parsed YAML as a table, or nil if invalid
+--- Notes/limitations (by design for frontmatter use-cases):
+---  - keys are limited to [A-Za-z0-9_-]
+---  - inline lists don't support commas inside quoted strings
+---  - scalar values are returned as strings (no auto-typing)
+---@param yaml_text string|nil The YAML content to parse
+---@return table<string, string|string[]>|nil Parsed YAML as a table, or nil if invalid/empty
 function M.parse(yaml_text)
   if not yaml_text or yaml_text == "" then
     return nil
@@ -91,8 +108,13 @@ function M.parse(yaml_text)
             local buf = {}
             while j <= #lines do
               local nxt = lines[j]
-              if nxt:match('^%s+') then
-                table.insert(buf, trim(nxt))
+              if nxt:match('^%s+$') then
+                -- preserve blank line inside block scalar
+                table.insert(buf, '')
+                j = j + 1
+              elseif nxt:match('^%s+') then
+                -- strip only the leading indentation for readability
+                table.insert(buf, ltrim(nxt))
                 j = j + 1
               else
                 break
