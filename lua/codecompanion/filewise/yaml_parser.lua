@@ -70,8 +70,8 @@ function M.parse(yaml_text)
           local j = i + 1
           while j <= #lines do
             local nxt = lines[j]
-            if nxt:match('^%s*%-+%s+') then
-              local item = nxt:match('^%s*%-+%s+(.*)$')
+            if nxt:match('^%s*%-%s+') then
+              local item = nxt:match('^%s*%-%s+(.*)$')
               item = trim(item)
               item = unquote(item)
               table.insert(items, item)
