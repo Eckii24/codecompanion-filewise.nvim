@@ -24,7 +24,7 @@ Each extension is independently configurable and can be enabled or disabled as n
   - The extension can be enabled or disabled via the `enabled` config field.
 
 - **Frontmatter Parsing:**
-  - The extension parses YAML frontmatter from markdown files using a Lua YAML parser (`lyaml` or `yaml.nvim`).
+  - The extension parses YAML frontmatter from markdown files using a built-in lightweight YAML parser.
 
 - **Slash Command Patching:**
   - The `/buffer` slash command is patched so that after a buffer is added, the extension injects the appropriate instruction files.
@@ -36,7 +36,7 @@ Each extension is independently configurable and can be enabled or disabled as n
 ## Technical Notes
 
 - The extension caches the mapping between globs and custom instruction files in memory for performance.
-- If no YAML parser is available, the extension notifies the user and skips conditional custom instructions.
+- The extension includes a lightweight YAML parser optimized for frontmatter parsing.
 - The extension is designed to be robust and extensible, following CodeCompanion's extension guidelines.
 
 ## Goals

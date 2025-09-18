@@ -37,9 +37,6 @@
 
 ### Installation
 
-> [!IMPORTANT]
-> This plugin requires the Lua [lyaml](https://luarocks.org/modules/gvvaughan/lyaml) library for YAML parsing.
-
 Use your favorite Neovim plugin manager.
 
 <details>

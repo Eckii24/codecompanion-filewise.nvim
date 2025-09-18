@@ -2,7 +2,7 @@
 -- filewise/frontmatter – Utilities for parsing YAML frontmatter from markdown
 --=============================================================================
 
-local lyaml = require 'lyaml'
+local yaml_parser = require 'codecompanion.filewise.yaml_parser'
 
 local M = {}
 
@@ -31,7 +31,7 @@ function M.parse(path, rest)
       if rest then table.insert(body, l) else break end
     end
   end
-  local ok, fm = pcall(lyaml.load, table.concat(frontmatter, '\n'))
+  local ok, fm = pcall(yaml_parser.parse, table.concat(frontmatter, '\n'))
   if ok and type(fm) == 'table' then
     return fm, body
   end
