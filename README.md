@@ -69,6 +69,29 @@ All features are provided as three separate extensions for CodeCompanion; as suc
 
 Configuration for each extension is done via the `codecompanion.setup` call, under the `extensions` table. Below are the default values and descriptions for each extension:
 
+### Frontmatter YAML Parser
+
+All extensions use YAML frontmatter parsing for configuration files. By default, the plugin tries to use the `lyaml` library, and falls back to a built-in lightweight parser if `lyaml` is not available. You can also specify a custom YAML parser function:
+
+```lua
+local frontmatter = require('codecompanion.filewise.frontmatter')
+
+-- Use custom YAML parser
+frontmatter.setup({
+  yaml_parser = function(yaml_text)
+    -- Your custom YAML parsing logic here
+    -- Should return a table or nil
+    return your_yaml_parser(yaml_text)
+  end
+})
+```
+
+**Config options:**
+- `yaml_parser`: A function that takes a YAML string and returns a parsed table, or nil if parsing fails. If not provided, the plugin will use `lyaml` if available, or fall back to the built-in parser.
+
+> [!NOTE]
+> The built-in parser supports basic YAML features commonly used in frontmatter: key-value pairs, inline lists (`[a, b, c]`), dash lists, and block scalars (`|` and `>`). For more complex YAML structures, consider using `lyaml` or providing a custom parser.
+
 ### Custom Instructions
 
 ```lua

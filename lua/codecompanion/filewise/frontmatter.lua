@@ -2,9 +2,42 @@
 -- filewise/frontmatter – Utilities for parsing YAML frontmatter from markdown
 --=============================================================================
 
-local yaml_parser = require 'codecompanion.filewise.yaml_parser'
-
 local M = {}
+
+---@class FrontmatterConfig
+---@field yaml_parser? fun(yaml_text: string): table|nil Custom YAML parser function
+
+--- Configuration for the frontmatter module
+---@type FrontmatterConfig
+M.config = {
+  yaml_parser = nil, -- Default to lyaml
+}
+
+--- Setup the frontmatter module with custom configuration
+---@param opts FrontmatterConfig|nil Configuration options
+function M.setup(opts)
+  if opts then
+    M.config = vim.tbl_deep_extend('force', M.config, opts)
+  end
+end
+
+--- Get the YAML parser function to use
+---@return fun(yaml_text: string): table|nil
+local function get_yaml_parser()
+  if M.config.yaml_parser then
+    return M.config.yaml_parser
+  else
+    -- Default to lyaml
+    local ok, lyaml = pcall(require, 'lyaml')
+    if ok then
+      return lyaml.load
+    else
+      -- Fallback to custom parser if lyaml is not available
+      local yaml_parser = require 'codecompanion.filewise.yaml_parser'
+      return yaml_parser.parse
+    end
+  end
+end
 
 --- Parses YAML frontmatter from a markdown file and returns it as a Lua table.
 ---@param path string Path to the markdown file
@@ -31,7 +64,9 @@ function M.parse(path, rest)
       if rest then table.insert(body, l) else break end
     end
   end
-  local ok, fm = pcall(yaml_parser.parse, table.concat(frontmatter, '\n'))
+  
+  local parser = get_yaml_parser()
+  local ok, fm = pcall(parser, table.concat(frontmatter, '\n'))
   if ok and type(fm) == 'table' then
     return fm, body
   end
